@@ -27,26 +27,51 @@ def get_tasks():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-        if request.method == "POST":
+    if request.method == "POST":
         # check if username already exists in db
-            existing_user = mongo.db.users.find_one(
+        existing_user = mongo.db.users.find_one(
             {"username": request.form.get("username").lower()})
 
-            if existing_user:
-                flash("Username already exists")
-                return redirect(url_for("register"))
+        if existing_user:
+            flash("Username already exists")
+            return redirect(url_for("register"))
 
-        # acts as the else statement if no existing user is found
-            register = {
-                "username": request.form.get("username").lower(),
-                "password": generate_password_hash(request.form.get("password"))
-            }
-            mongo.db.users.insert_one(register)
+        register = {
+            "username": request.form.get("username").lower(),
+            "password": generate_password_hash(request.form.get("password"))
+        }
+        mongo.db.users.insert_one(register)
 
         # put the new user into 'session' cookie
-            session["user"] = request.form.get("username").lower()
-            flash("Registration Successful!")
-        return render_template("register.html")
+        session["user"] = request.form.get("username").lower()
+        flash("Registration Successful!")
+    return render_template("register.html")
+
+
+@app.route("/sign_in", methods=["GET", "POST"])
+def sign_in():
+    if request.method == "POST":
+        # check if username exists in db
+        existing_user = mongo.db.users.find_one(
+            {"username": request.form.get("username").lower()})
+
+        if existing_user:
+            # ensure hashed password matches user input
+            if check_password_hash(
+                existing_user["password"], request.form.get("password")):
+                    session["user"] = request.form.get("username").lower()
+                    flash("Welcome, {}".format(request.form.get("username")))
+            else:
+                # invalid password match
+                flash("Incorrect Username and/or Password")
+                return redirect(url_for("sign_in"))
+
+        else:
+            # username doesn't exist
+            flash("Incorrect Username and/or Password")
+            return redirect(url_for("sign_in"))
+
+    return render_template("sign-in.html")
 
 
 if __name__ == "__main__":
