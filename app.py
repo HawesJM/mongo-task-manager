@@ -71,7 +71,7 @@ def sign_in():
         else:
             # username doesn't exist
             flash("Incorrect Username and/or Password")
-            return redirect(url_for("sign_in"))
+            return redirect(url_for("sign-in"))
 
     return render_template("sign-in.html")
 
@@ -81,7 +81,19 @@ def profile(username):
     # grab session user's username from db
     username = mongo.db.users.find_one(
         {"username": session["user"]})["username"]
-    return render_template("profile.html", username=username)
+    if session["user"]:
+        return render_template("profile.html", username=username)
+
+    return redirect(url_for("sign_in"))
+
+    
+
+@app.route("/signout")
+def signout():
+    # remove user from sesscookie
+    flash("You have been logged out")
+    session.pop("user")
+    return redirect(url_for("sign_in"))
 
 
 if __name__ == "__main__":
